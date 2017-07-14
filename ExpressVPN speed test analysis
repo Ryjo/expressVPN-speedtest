@@ -1,0 +1,45 @@
+###set working directory where vpn speed test files are located
+setwd("C:/~")
+
+colwidths<-c(30,20,25,12) #column widths of vpn speed test text files
+headers<-c("location","latency","download.speed","speed.index")
+
+
+###Create a list containing all speed test file names###
+files<-list.files(pattern="SpeedTestResults*")
+
+
+### Create a data frame containing all speed test results. ###
+y<-read.fwf(file=files[1], 
+            widths=colwidths,skip=5,col.names=headers,strip.white=T) #import first data frame
+date<-paste(substr(files[1],start=18,21),"/",
+            substr(files[1],start=22,23),"/",
+            substr(files[1],start=24,25))
+y<-data.frame(y,date)
+
+for (i in 2:length(files)) {
+  x<-read.fwf(file=files[i], 
+              widths=colwidths,skip=5,col.names=headers,strip.white=T) #import data
+  date<-paste(substr(files[i],start=18,21),"/",
+              substr(files[i],start=22,23),"/",
+              substr(files[i],start=24,25))
+  x<-data.frame(x,date)
+  y<-rbind(y,x)
+  
+}
+
+y$date<-as.Date(y$date,"%Y / %m / %d") #convert dates from factors to date format
+
+speed<-as.numeric(y$speed.index)
+speed.means<-tapply(speed,y$location,mean)
+summary(speed.means)
+max(speed.means)
+
+###Create a function that plots speed test results for the specified server over time###
+plot.fun<-function(location="Los Angeles - 2") {
+  plot(y$date[y$location==location],speed[y$location==location],
+       xlab="Date",ylab="Speed Index",main=paste(location," Speed Test Results Over Time"))
+  model<-lm(speed[y$location==location]~y$date[y$location==location])
+  abline(model,col="red")  
+  
+}
